@@ -574,6 +574,51 @@ class EnhancedRF_XGB_Comparison:
         # Rotate labels for better readability
         ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha='center')
         ax.set_yticklabels(ax.get_yticklabels(), rotation=0, va='center')
+
+
+     
+    def plot_roc_curves_comparison(self):
+        """Plot ROC curves for top performing models"""
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Get top 5 models by F1 score
+        top_models = sorted(self.results.items(), key=lambda x: x[1]['f1_score'], reverse=True)[:5]
+        
+        colors = ['blue', 'red', 'green', 'orange', 'purple']
+        
+        for i, (model_key, result) in enumerate(top_models):
+            fpr, tpr, _ = roc_curve(self.y_test, result['predictions_proba'])
+            ax1.plot(fpr, tpr, color=colors[i], 
+                    label=f"{result['model_name'][:15]}... (AUC={result['roc_auc']:.3f})",
+                    linewidth=2)
+        
+        ax1.plot([0, 1], [0, 1], 'k--', alpha=0.6)
+        ax1.set_xlim([0.0, 1.0])
+        ax1.set_ylim([0.0, 1.05])
+        ax1.set_xlabel('False Positive Rate')
+        ax1.set_ylabel('True Positive Rate')
+        ax1.set_title('ROC Curves - Top 5 Models')
+        ax1.legend(loc="lower right")
+        ax1.grid(True, alpha=0.3)
+        
+        # Precision-Recall curves
+        for i, (model_key, result) in enumerate(top_models):
+            precision, recall, _ = precision_recall_curve(self.y_test, result['predictions_proba'])
+            ax2.plot(recall, precision, color=colors[i],
+                    label=f"{result['model_name'][:15]}... (F1={result['f1_score']:.3f})",
+                    linewidth=2)
+        
+        ax2.set_xlim([0.0, 1.0])
+        ax2.set_ylim([0.0, 1.05])
+        ax2.set_xlabel('Recall')
+        ax2.set_ylabel('Precision')
+        ax2.set_title('Precision-Recall Curves - Top 5 Models')
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.show()
+
     
     def plot_all_confusion_matrices(self):
         """Plot confusion matrices for all models in organized pages"""
@@ -607,7 +652,7 @@ class EnhancedRF_XGB_Comparison:
                 figsize = (5 * n_models, 5)
             else:
                 rows, cols = 2, 3
-                figsize = (12, 8)
+                figsize = (1, 8)
             
             fig, axes = plt.subplots(rows, cols, figsize=figsize)
             # Handle single subplot case
@@ -1235,7 +1280,7 @@ class EnhancedRF_XGB_Comparison:
         
         # Step 5: Train Random Forest variants
         self.train_random_forest_variants()
-        
+       
         # Step 6: Train XGBoost variants
         self.train_xgboost_variants()
         
@@ -1245,11 +1290,12 @@ class EnhancedRF_XGB_Comparison:
         # Step 8: Create comprehensive comparison table
         comparison_df = self.create_comprehensive_comparison_table()
         
-        # Step 9: Show confusion matrices (NEW!)
+        # Step 9: Show confusion matrices and ROC curves
+        self.plot_roc_curves_comparison()
         self.plot_top_confusion_matrices(top_n=8)
         self.plot_all_confusion_matrices()
         
-        # Step 10: Confusion matrix analysis (NEW!)
+        # Step 10: Confusion matrix analysis 
         self.create_confusion_matrix_summary()
         self.plot_performance_vs_confusion_metrics()
         
